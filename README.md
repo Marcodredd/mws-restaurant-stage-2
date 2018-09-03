@@ -47,6 +47,9 @@ Let's start with running commands in your terminal, known as command line interf
 debug: Environment : development
 debug: Port        : 1337
 
+### Start local host
+localhost:8080 
+This will start the application before connection to the node server
 
 If you find a bug in the source code or a mistake in the documentation, you can help us by
 submitting an issue to our [Waffle Dashboard](https://waffle.io/udacity/mwnd-issues). Even better you can submit a Pull Request with a fix :)
