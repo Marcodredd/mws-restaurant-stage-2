@@ -68,8 +68,11 @@ config/local.js
 
 node_modules
 bower_components
-
-
+api
+config
+.tmp
+server.js
+app.js
 
 
 ################################################
