@@ -61,6 +61,11 @@ section {
   width: 100%;
 }
 
+/*.leaflet-container a {
+  color: #d8338c;
+  font-size: 12pt;
+}*/
+
 #maincontent {
   background-color: #f3f3f3;
   min-height: 100%;
@@ -174,7 +179,7 @@ nav h1 a {
 
 /* ====================== Restaurant Listing ====================== */
 #restaurants-list {
-  background-color: #f3f3f3;
+  background-color: #EFE8E8;
   list-style: outside none none;
   margin: 0;
   padding: 0.5em;
