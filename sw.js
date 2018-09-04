@@ -16,7 +16,7 @@ self.addEventListener('install', function (event) {
         'css/styles.css',
         'https://fonts.googleapis.com/css?family=Ubuntu',
         'https://fonts.googleapis.com/css?family=Fira+Sans',
-       // 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.jpg70?access_token={pk.eyJ1IjoibGV0ZSIsImEiOiJjamtmZmdlbmYwNml0M2tvNmRuNjAxb2ZwIn0.hS92_IFDLZxJJAuo6V8G3Q}'
+        //'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.jpg70?access_token={pk.eyJ1IjoibGV0ZSIsImEiOiJjamtmZmdlbmYwNml0M2tvNmRuNjAxb2ZwIn0.hS92_IFDLZxJJAuo6V8G3Q}'
       ]);
     })
   );
