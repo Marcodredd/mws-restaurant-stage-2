@@ -1,40 +1,75 @@
+/**
+ * With needed help from developers.google.com/web/fundamentals/primers/service-workers
+ * Caching static files using service worker
+ */
 var staticCacheName = 'restaurant-info';
+var urlsToCache = [
+  //cache all static files
+  '/',     // index.html
+  'restaurant.html',
+  'js/dbhelper.js',
+  'js/main.js',
+  'js/idb.js',
+  'js/restaurant_info.js',
+  'manifest.json',
+  'sw.js',
+  'img/',
+  'icon-192x192.png',
+  'icon-512x512.png',
+  'favicon.ico',
+  'css/styles.css',
+  'http://localhost:1337/restaurants'
+];
 
-self.addEventListener('install', function (event) {
+self.addEventListener('install', function(event) {
   event.waitUntil(
-    caches.open(staticCacheName).then((cache) => {
-      return cache.addAll([
-        //cache all static files
-        '/',
-        'index.html',
-        'restaurant.html',
-        'js/dbhelper.js',
-        'js/main.js',
-        'sw.js',
-        'img/',
-        'js/restaurant_info.js',
-        'css/styles.css',
-        'https://fonts.googleapis.com/css?family=Ubuntu',
-        'https://fonts.googleapis.com/css?family=Fira+Sans',
-        //'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.jpg70?access_token={pk.eyJ1IjoibGV0ZSIsImEiOiJjamtmZmdlbmYwNml0M2tvNmRuNjAxb2ZwIn0.hS92_IFDLZxJJAuo6V8G3Q}'
-      ]);
+    caches.open(staticCacheName)
+    .then(function(cache) {
+      console.log('Opened cache');
+      return cache.addAll(urlsToCache);
     })
   );
 });
 
+//Delete old cache
+self.addEventListener('activate', function(event) {
+  // console.log("Service Worker activated");
+  event.waitUntil(
+    caches.keys().then(function(cacheNames) {
+      return Promise.all(
+        cacheNames.filter(function(cacheName) {
+          return cacheName.startsWith('restaurant-info') &&
+                 cacheName != staticCacheName;
+        }).map(function(cacheName) {
+          return caches.delete(cacheName);
+        })
+      );
+    })
+  );
+});
+
+//Fetch event
 self.addEventListener('fetch', function(event) {
-  var requestUrl = new URL(event.request.url);
-
-  if (requestUrl.origin === location.origin) {
-    if (requestUrl.pathname === './restaurant.html') {
-      event.respondWith(caches.match('./restaurant.html'));
-      return;
-    }
-  }
-
+  // console.log("Service Worker starting fetch");
   event.respondWith(
-    caches.match(event.request).then(function(response) {
-      return response || fetch(event.request);
+    caches.open(staticCacheName).then(function(cache) {
+      return cache.match(event.request).then(function (response) {
+        if (response) {
+          // console.log("data fetched from cache");
+          return response;
+        }
+        else {
+          return fetch(event.request).then(function(networkResponse) {
+            // console.log("data fetched from network", event.request.url);
+            //cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          }).catch(function(error) {
+            console.log("The fetch request resulted in an error", event.request.url, error);
+          });
+        }
+      });
+    }).catch(function(error) {
+      console.log("Fetch failed", error);
     })
   );
 });
