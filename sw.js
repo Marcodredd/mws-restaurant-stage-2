@@ -19,6 +19,7 @@ var urlsToCache = [
   './icon-512x512.png',
   './favicon.ico',
   './css/styles.css',
+ // 'http://localhost:1337/restaurants'
 ];
 
 self.addEventListener('install', function(event) {
@@ -48,13 +49,18 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
+  var requestUrl = new URL(event.request.url);
+
+  if (requestUrl.origin === location.origin) {
+    if (requestUrl.pathname === './restaurant.html') {
+      event.respondWith(caches.match('./restaurant.html?id=${restaurant.id}'));
+      return;
+    }
+  }
+
   event.respondWith(
     caches.match(event.request).then(function(response) {
-      if (response) {
-        return response;
-      } else {
-        return fetch(event.request);
-      }
+      return response || fetch(event.request);
     })
   );
 });
