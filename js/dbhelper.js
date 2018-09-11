@@ -1,60 +1,19 @@
 
-
-/**
- * Create the database function
- */
-const resDatabase = (function() {
   'use strict';
   //check fo support
   if (!('indexedDB' in window)) {
     console.log('This browser doesn\'t support IndexedDB');
-    return;
   }
-
-  var dbPromise = idb.open('restaurant-db', 1, function(upgradeDb) {
+/**
+ * Create database
+ */
+  var dbPromise = idb.open('restaurant-db', 2, function(upgradeDb) {
     switch(upgradeDb.oldVersion) {
       case 0:
+      case 1:
       upgradeDb.createObjectStore('restaurants', {keyPath: 'id'});
     }
-  });
-/**
- * Add restaurants data received from json file to the restaurant store
- * @param {*} keyPath 
- */
-function addRestaurants(restaurant) {
-    return dbPromise.then(function(db) {
-      var tx = db.transaction('restaurants', 'readwrite');
-      var store = tx.objectStore('restaurants');
-
-      store.add(restaurant);
-      return tx.complete;
-    }).then(function() {
-      console.log('Restaurants added to store')
-    }).catch(function(error) {
-      console.log('Error adding restaurants to the store', error);
-    });
-  }
-/**
- * Retrieve content of the restaurant store
- */
-function getRestaurants(id) {
-  return dbPromise.then(function (db) { 
-    var tx = db.transaction('restaurants', 'readonly');
-    var store = tx.objectStore('restaurants');
-
-    return store.get(parseInt(id));
-   }).then(function(restaurantObject) {
-     return restaurantObject;
-   }).catch(function(error) {
-     console.log('Error getting data out of the restaurants store', error);
-   });
-}
-return {
-  dbPromise: (dbPromise),
-  addRestaurants: (addRestaurants),
-  getRestaurants: (getRestaurants),
-};
-})();
+  });  
 
 /**
  * Common database helper functions.
@@ -74,15 +33,37 @@ class DBHelper {
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
-    fetch(DBHelper.DATABASE_URL)
-    .then(response => response.json())
-    .then(function(jsonResponse) {
-      callback(null, jsonResponse);
+    dbPromise.then(function(db) {
+      var tx = db.transaction('restaurants');
+      var store = tx.objectStore('restaurants');
+  
+      return store.getAll();
+    }).then(function(restaurants) {
+    if (restaurants.length !== 0) {
+      callback(null, restaurants);
+    } else {
+      fetch(DBHelper.DATABASE_URL)
+        .then(response => response.json())
+        .then(function(restaurants) {
+
+        dbPromise.then(function(db) {
+          var tx = db.transaction('restaurants', 'readwrite');
+          var store = tx.objectStore('restaurants');
+    
+          for (let restaurant of restaurants) {
+              store.put(restaurant);
+          }
+          return tx.complete;          
+          }).then(function() {
+          console.log('Restaurants added to store');
+          }).catch(function(error) {
+          console.log('Error adding restaurants to store', error);
+          }).finally(function(error) {
+            callback(null, restaurants);
+          })
+          }).catch(error => callback(error, null))
+        }
     })
-    .catch(function(error) {
-      const errorMessage = (`Request failed. Returned status of ${error}`);
-      callback(errorMessage, null);
-    });
   }
 
   /**
@@ -90,30 +71,37 @@ class DBHelper {
    */
   static fetchRestaurantById(id, callback) {
     // fetch all restaurants with proper error handling.
-    var restaurantDb = resDatabase.getRestaurants(id);
-    restaurantDb.then(function(restaurantDbObject) {
-      if (restaurantDbObject) {
-        callback(null, restaurantDbObject);
-        return;
-      } else {
-        DBHelper.fetchRestaurants((error, restaurants) => {
-          if (error) {
-            callback(error, null);
-          } else {
-            const restaurant = restaurants.find(r => r.id == id);
-            if (restaurant) { // Got the restaurant
-              restaurantDb = resDatabase.addRestaurants(restaurant);
-              
-              callback(null, restaurant);
-            } else { // Restaurant does not exist in the database
-              callback('Restaurant does not exist', null);
-            }
-          }
-        });
-      }
-    });
-  }
+    dbPromise.then(function(db) {
+      var tx = db.transaction('restaurants');
+      var storeId = tx.objectStore('restaurants');
 
+      return storeId.get(parseInt(id))
+    }).then(function(restaurant) {
+     // restaurant = restaurants.find(r => r.id == id);
+      console.log(restaurant)
+        if (restaurant) {
+          callback(null, restaurant)
+        } else {
+          fetch(DBHelper.DATABASE_URL + '/' + id)
+          .then(response => response.json())
+          .then(restaurant => callback(null, restaurant))
+          .catch(error => callback(error, null))
+            }
+        })
+      
+    /*DBHelper.fetchRestaurants((error, restaurants) => {
+      if (error) {
+        callback(error, null);
+      } else {
+        const restaurant = restaurants.find(r => r.id == id);
+        if (restaurant) { // Got the restaurant
+          callback(null, restaurant);
+        } else { // Restaurant does not exist in the database
+          callback('Restaurant does not exist', null);
+        }
+      }
+    });*/
+  }
   /**
    * Fetch restaurants by a cuisine type with proper error handling.
    */
