@@ -78,14 +78,27 @@ class DBHelper {
       return storeId.get(parseInt(id))
     }).then(function(restaurant) {
      // restaurant = restaurants.find(r => r.id == id);
-      console.log(restaurant)
+      
         if (restaurant) {
           callback(null, restaurant)
         } else {
           fetch(DBHelper.DATABASE_URL + '/' + id)
           .then(response => response.json())
-          .then(restaurant => callback(null, restaurant))
-          .catch(error => callback(error, null))
+          .then(function(restaurant) {
+            dbPromise.then(function(db) {
+              var tx = db.transaction('restaurants', 'readwrite');
+              var storeId = tx.objectStore('restaurants');
+
+              storeId.put(restaurant);
+              return tx.complete;
+            }).then(function() {
+              console.log('Specific restaurant added to the store');
+            }).catch(function(error) {
+              console.log('Error saving restaurant', error);
+            }).finally(function(error) {
+              callback(null, restaurant);
+            })
+          }).catch(error => callback(error, null)) 
             }
         })
       
